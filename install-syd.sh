@@ -60,12 +60,22 @@ if ! command -v syd &> /dev/null; then
     git clone https://git.sr.ht/~alip/syd
     cd syd
     
-    # Build Syd
-    cargo build --release
+    # Build Syd using secure build environment (if available)
+    if [[ -f "/usr/local/bin/isolated-build.sh" ]]; then
+        log "Using secure build environment..."
+        /usr/local/bin/isolated-build.sh cargo build --release
+        # Copy from secure build environment
+        cp /build/target/release/syd /usr/local/bin/
+        cp /build/target/release/syd-pty /usr/local/bin/
+    else
+        log "Using standard build environment..."
+        # Build Syd with secure environment variables
+        CARGO_TARGET_DIR=/build/target CARGO_HOME=/build/cargo RUSTUP_HOME=/build/rustup TMPDIR=/build/tmp PATH="/build/cargo/bin:$PATH" cargo build --release
+        # Copy from secure build environment
+        cp /build/target/release/syd /usr/local/bin/
+        cp /build/target/release/syd-pty /usr/local/bin/
+    fi
     
-    # Install Syd and syd-pty binaries
-    cp target/release/syd /usr/local/bin/
-    cp target/release/syd-pty /usr/local/bin/
     chmod +x /usr/local/bin/syd
     chmod +x /usr/local/bin/syd-pty
     

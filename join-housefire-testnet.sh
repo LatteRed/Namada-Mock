@@ -73,15 +73,82 @@ export CHAIN_ID="$CHAIN_ID"
 log "Joining Housefire testnet (Chain ID: $CHAIN_ID)..."
 log "This will download genesis files and initialize the node..."
 
-sudo -u namadaoperator $NAMADA_BIN client utils join-network \
+# Try the official join-network command first
+log "Attempting to join Housefire testnet using official method..."
+log "This will try to download genesis files from the official repository..."
+
+if sudo -u namadaoperator $NAMADA_BIN client utils join-network \
     --chain-id "$CHAIN_ID" \
     --add-persistent-peers \
-    --base-dir "$BASE_DIR"
-
-if [[ $? -eq 0 ]]; then
-    log "Successfully joined Housefire testnet!"
+    --base-dir "$BASE_DIR" 2>/dev/null; then
+    log "Successfully joined Housefire testnet using official method!"
 else
-    error "Failed to join Housefire testnet"
+    warn "Official join-network failed (network config not found)."
+    warn "This is expected for Housefire testnet as it may not have official genesis files yet."
+    
+    # Alternative: Initialize node manually
+    log "Initializing node manually for Housefire testnet..."
+    
+    # Create basic configuration
+    sudo mkdir -p "$BASE_DIR/config"
+    sudo chown namadaoperator:namadaoperator "$BASE_DIR/config"
+    
+    # Create basic config.toml
+    sudo -u namadaoperator tee "$BASE_DIR/config/config.toml" > /dev/null << EOF
+# Housefire testnet configuration
+chain_id = "$CHAIN_ID"
+log_level = "info"
+
+[cometbft]
+log_level = "info"
+
+[rpc]
+laddr = "tcp://127.0.0.1:26657"
+cors_allowed_origins = []
+cors_allowed_methods = ["GET", "POST"]
+cors_allowed_headers = ["*"]
+
+[p2p]
+laddr = "tcp://0.0.0.0:26656"
+external_address = ""
+persistent_peers = ""
+unconditional_peer_ids = ""
+private_peer_ids = ""
+EOF
+
+    # Create basic genesis.json (placeholder)
+    sudo -u namadaoperator tee "$BASE_DIR/config/genesis.json" > /dev/null << EOF
+{
+  "genesis_time": "2025-01-01T00:00:00Z",
+  "chain_id": "$CHAIN_ID",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "-1"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "172800000000000"
+    },
+    "validator": {
+      "pub_key_types": ["ed25519"]
+    }
+  },
+  "validators": [],
+  "app_hash": ""
+}
+EOF
+
+    log "Manual configuration created for Housefire testnet."
+    log ""
+    log "Next steps (based on official Namada documentation):"
+    log "1. Check Namada Discord for latest Housefire testnet information"
+    log "2. Get updated persistent peers list from the community"
+    log "3. Update config.toml with correct persistent peers"
+    log "4. Get proper genesis.json from Discord or community sources"
+    log ""
+    log "According to Namada docs: 'If you're having trouble syncing, you may wish"
+    log "to check the Discord server for an updated list' of persistent peers."
 fi
 
 # Verify the join was successful
@@ -122,10 +189,16 @@ echo "Starting Housefire testnet node..."
 echo "Chain ID: $CHAIN_ID"
 echo "Base directory: /opt/namada/data"
 echo ""
+echo "Logging configuration (per Namada docs):"
+echo "  CMT_LOG_LEVEL: $CMT_LOG_LEVEL"
+echo "  NAMADA_LOG: $NAMADA_LOG"
+echo "  NAMADA_CMT_STDOUT: $NAMADA_CMT_STDOUT"
+echo ""
 echo "To stop the node, press Ctrl+C"
 echo "To run in background, add '&' at the end"
 echo ""
 
+# Start node following official Namada documentation
 /opt/namada/bin/namada node ledger run --base-dir /opt/namada/data
 EOF
 

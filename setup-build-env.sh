@@ -51,14 +51,19 @@ run_cmd() {
 
 log "Setting up secure build environment for Rust and compilation tools..."
 
-# 1. Create secure build directory structure
-log "Step 1: Creating secure build directory structure"
+# 1. Install build dependencies
+log "Step 1: Installing build dependencies"
+run_cmd apt update
+run_cmd apt install -y build-essential git curl wget pkg-config libssl-dev libssl3 openssl libffi-dev
+
+# 2. Create secure build directory structure
+log "Step 2: Creating secure build directory structure"
 run_cmd mkdir -p /build/{target,cargo,rustup,tmp,bin}
 run_cmd chown -R namada:namada /build
 run_cmd chmod -R 755 /build
 
-# 2. Set up Rust environment variables
-log "Step 2: Configuring Rust environment variables"
+# 3. Set up Rust environment variables
+log "Step 3: Configuring Rust environment variables"
 if [[ $EUID -eq 0 ]]; then
     su - namada -c 'cat >> /home/namada/.bashrc << "EOF"
 
@@ -92,7 +97,7 @@ EOF'
 fi
 
 # 3. Create build environment configuration
-log "Step 3: Creating build environment configuration"
+log "Step 4: Creating build environment configuration"
 sudo tee /build/build-env.conf > /dev/null << 'EOF'
 # Secure Build Environment Configuration
 # This file contains environment variables for secure compilation
@@ -118,7 +123,7 @@ sudo chown namada:namada /build/build-env.conf
 sudo chmod 644 /build/build-env.conf
 
 # 4. Create build cleanup script
-log "Step 4: Creating build cleanup script"
+log "Step 5: Creating build cleanup script"
 sudo tee /usr/local/bin/clean-build-env.sh > /dev/null << 'EOF'
 #!/bin/bash
 # Clean build environment script
@@ -151,7 +156,7 @@ EOF
 sudo chmod +x /usr/local/bin/clean-build-env.sh
 
 # 5. Create build monitoring script
-log "Step 5: Creating build monitoring script"
+log "Step 6: Creating build monitoring script"
 sudo tee /usr/local/bin/monitor-build-env.sh > /dev/null << 'EOF'
 #!/bin/bash
 # Monitor build environment script
@@ -203,7 +208,7 @@ EOF
 sudo chmod +x /usr/local/bin/monitor-build-env.sh
 
 # 6. Create Rust installation script
-log "Step 6: Creating Rust installation script"
+log "Step 7: Creating Rust installation script"
 sudo tee /usr/local/bin/install-rust-secure.sh > /dev/null << 'EOF'
 #!/bin/bash
 # Install Rust in secure build environment
@@ -235,7 +240,7 @@ EOF
 sudo chmod +x /usr/local/bin/install-rust-secure.sh
 
 # 7. Create build isolation script
-log "Step 7: Creating build isolation script"
+log "Step 8: Creating build isolation script"
 sudo tee /usr/local/bin/isolated-build.sh > /dev/null << 'EOF'
 #!/bin/bash
 # Run builds in isolated environment
@@ -277,7 +282,7 @@ EOF
 sudo chmod +x /usr/local/bin/isolated-build.sh
 
 # 8. Set up automatic cleanup
-log "Step 8: Setting up automatic cleanup"
+log "Step 9: Setting up automatic cleanup"
 sudo tee /etc/cron.d/build-cleanup > /dev/null << 'EOF'
 # Build environment cleanup
 # Clean temporary files daily at 3 AM
@@ -288,7 +293,7 @@ sudo tee /etc/cron.d/build-cleanup > /dev/null << 'EOF'
 EOF
 
 # 9. Create build environment test script
-log "Step 9: Creating build environment test script"
+log "Step 10: Creating build environment test script"
 sudo tee /usr/local/bin/test-build-env.sh > /dev/null << 'EOF'
 #!/bin/bash
 # Test build environment

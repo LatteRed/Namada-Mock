@@ -54,7 +54,7 @@ log "Setting up secure build environment for Rust and compilation tools..."
 # 1. Install build dependencies
 log "Step 1: Installing build dependencies"
 run_cmd apt update
-run_cmd apt install -y build-essential git curl wget pkg-config libssl-dev libssl3 openssl libffi-dev
+run_cmd apt install -y build-essential git curl wget pkg-config libssl-dev libssl3 openssl libffi-dev protobuf-compiler libudev-dev clang libclang-dev
 
 # 2. Create secure build directory structure
 log "Step 2: Creating secure build directory structure"

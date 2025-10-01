@@ -62,24 +62,12 @@ fi
 log "Rust version: $(rustc --version)"
 log "Cargo version: $(cargo --version)"
 
-# Get the latest Namada release tag for building
-log "Fetching latest Namada release information..."
-NAMADA_RELEASE_URL="https://api.github.com/repos/namada-net/namada/releases/latest"
-
-RELEASE_INFO=$(curl -sL "$NAMADA_RELEASE_URL")
-if [[ -z "$RELEASE_INFO" ]]; then
-    error "Failed to fetch release information from GitHub API"
-fi
-
-NAMADA_VERSION=$(echo "$RELEASE_INFO" | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
-if [[ -z "$NAMADA_VERSION" ]]; then
-    error "Failed to extract version information"
-fi
-
-log "Latest Namada version: $NAMADA_VERSION"
+# Set up for Housefire testnet
+CHAIN_ID="housefire-alpaca.cc0d3e0c033be"
+log "Configuring for Housefire testnet (Chain ID: $CHAIN_ID)"
 
 # Confirm installation
-echo -e "${BLUE}This script will build and install Namada version $NAMADA_VERSION from source${NC}"
+echo -e "${BLUE}This script will build and install Namada for Housefire testnet${NC}"
 echo -e "${BLUE}Installation will be performed securely with the following features:${NC}"
 echo "  - Source code compilation with Rust"
 echo "  - Secure directory permissions"
@@ -100,12 +88,40 @@ fi
 TEMP_DIR=$(mktemp -d -t namada-build.XXXXXXXXXX)
 cd "$TEMP_DIR"
 
-# Clone Namada repository
+# Clone Namada repository (latest main branch)
 log "Cloning Namada repository..."
-git clone --depth 1 --branch "$NAMADA_VERSION" https://github.com/namada-net/namada.git
+git clone --depth 1 https://github.com/namada-net/namada.git
 cd namada
 
-# Note: CometBFT installation removed - not needed for this setup
+# Install CometBFT (required for Namada)
+if ! command -v cometbft &> /dev/null; then
+    log "CometBFT not found. Installing CometBFT v0.37.15 for Housefire testnet..."
+    
+    # Install Go if not available
+    if ! command -v go &> /dev/null; then
+        log "Installing Go..."
+        apt install -y golang-go
+    fi
+    
+    # Set up Go environment
+    export GOPATH="$HOME/go"
+    export PATH="$PATH:$GOPATH/bin"
+    
+    # Install CometBFT v0.37.15 (required for Housefire testnet)
+    go install github.com/cometbft/cometbft/cmd/cometbft@v0.37.15
+    
+    # Add Go bin to PATH permanently
+    echo 'export GOPATH="$HOME/go"' >> ~/.bashrc
+    echo 'export PATH="$PATH:$GOPATH/bin"' >> ~/.bashrc
+    
+    # Copy to /usr/local/bin for system-wide access
+    cp "$HOME/go/bin/cometbft" /usr/local/bin/
+    chmod +x /usr/local/bin/cometbft
+    
+    log "CometBFT v0.37.15 installed successfully"
+else
+    log "CometBFT is already installed"
+fi
 
 # Build Namada using secure build environment
 log "Building Namada from source (this may take 30-60 minutes)..."
@@ -137,9 +153,10 @@ else
     error "Namada binary installation verification failed"
 fi
 
-# Initialize Namada
-log "Initializing Namada node..."
-sudo -u namadaoperator /opt/namada/bin/namada --base-dir /opt/namada/data init
+# Join Housefire testnet
+log "Joining Housefire testnet..."
+export CHAIN_ID="housefire-alpaca.cc0d3e0c033be"
+sudo -u namadaoperator /opt/namada/bin/namada client utils join-network --chain-id $CHAIN_ID --add-persistent-peers --base-dir /opt/namada/data
 
 # Configure Namada with security settings
 log "Configuring Namada with security settings..."

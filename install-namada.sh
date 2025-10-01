@@ -48,9 +48,15 @@ if [[ ! -f "/etc/sysctl.d/99-hardened.conf" ]]; then
     fi
 fi
 
+# Source the secure build environment if it exists
+if [[ -f "/usr/local/bin/source-build-env.sh" ]]; then
+    log "Loading secure build environment..."
+    source /usr/local/bin/source-build-env.sh
+fi
+
 # Check if Rust is installed
 if ! command -v cargo &> /dev/null; then
-    error "Rust/Cargo is not installed. Please install Rust first."
+    error "Rust/Cargo is not installed. Please run the build environment setup first."
 fi
 
 log "Rust version: $(rustc --version)"
@@ -111,9 +117,15 @@ if ! command -v cometbft &> /dev/null; then
     log "CometBFT installed successfully"
 fi
 
-# Build Namada
+# Build Namada using isolated build environment
 log "Building Namada from source (this may take 30-60 minutes)..."
-make install
+if [[ -f "/usr/local/bin/isolated-build.sh" ]]; then
+    log "Using isolated build environment..."
+    /usr/local/bin/isolated-build.sh make install
+else
+    log "Using standard build environment..."
+    make install
+fi
 
 # Verify build
 if ! command -v namada &> /dev/null; then

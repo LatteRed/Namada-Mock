@@ -90,12 +90,12 @@ cat > /etc/syd/profiles/namada.syd << 'EOF'
 stat:deny
 exec:allow
 ioctl:allow
-force:allow
+force:deny
 network:allow
 lock:allow
 crypt:deny
 proxy:deny
-memory:deny
+memory:allow
 pid:allow
 
 # Allow necessary paths for Namada
@@ -115,10 +115,6 @@ stat/allow: /proc/self/status
 network/allow: unix
 network/allow: inet
 network/allow: inet6
-
-# Allow specific ports for Namada
-network/allow_port: 26656  # P2P port
-network/allow_port: 26657  # RPC port
 
 # Exec restrictions - only allow Namada binary
 exec/allow: /opt/namada/bin/namada
@@ -148,8 +144,7 @@ pid/allow: getuid
 pid/allow: getgid
 
 # Lock restrictions using Landlock
-lock/allow: /opt/namada/data
-lock/allow: /opt/namada/logs
+lock/allow: /opt/namada
 EOF
 
 chmod 644 /etc/syd/profiles/namada.syd

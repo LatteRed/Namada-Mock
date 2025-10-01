@@ -80,7 +80,7 @@ export CARGO_INCREMENTAL=0
 export RUSTFLAGS="-C target-cpu=native -C opt-level=3"
 EOF'
 else
-    sudo -u namada bash -c 'cat >> /home/namada/.bashrc << "EOF"
+    sudo -u namadaoperator bash -c 'cat >> /home/namadaoperator/.bashrc << "EOF"
 
 # Rust environment for secure builds
 export CARGO_TARGET_DIR=/build/target

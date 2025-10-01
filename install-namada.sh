@@ -105,23 +105,14 @@ log "Cloning Namada repository..."
 git clone --depth 1 --branch "$NAMADA_VERSION" https://github.com/namada-net/namada.git
 cd namada
 
-# Check if CometBFT is available
-if ! command -v cometbft &> /dev/null; then
-    log "CometBFT not found. Installing CometBFT v0.37.15..."
-    # Install CometBFT
-    wget -O cometbft_0.37.15_linux_amd64.tar.gz https://github.com/cometbft/cometbft/releases/download/v0.37.15/cometbft_0.37.15_linux_amd64.tar.gz
-    tar -xzf cometbft_0.37.15_linux_amd64.tar.gz
-    sudo cp cometbft /usr/local/bin/
-    sudo chmod +x /usr/local/bin/cometbft
-    rm cometbft_0.37.15_linux_amd64.tar.gz cometbft
-    log "CometBFT installed successfully"
-fi
+# Note: CometBFT installation removed - not needed for this setup
 
-# Build Namada using isolated build environment
+# Build Namada using secure build environment
 log "Building Namada from source (this may take 30-60 minutes)..."
 if [[ -f "/usr/local/bin/isolated-build.sh" ]]; then
-    log "Using isolated build environment..."
-    /usr/local/bin/isolated-build.sh make install
+    log "Using secure build environment..."
+    # Set environment variables and run make install directly
+    CARGO_TARGET_DIR=/build/target CARGO_HOME=/build/cargo RUSTUP_HOME=/build/rustup TMPDIR=/build/tmp PATH="/build/cargo/bin:$PATH" make install
 else
     log "Using standard build environment..."
     make install

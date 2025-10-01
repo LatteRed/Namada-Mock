@@ -63,9 +63,11 @@ if ! command -v syd &> /dev/null; then
     # Build Syd
     cargo build --release
     
-    # Install Syd
+    # Install Syd and syd-pty binaries
     cp target/release/syd /usr/local/bin/
+    cp target/release/syd-pty /usr/local/bin/
     chmod +x /usr/local/bin/syd
+    chmod +x /usr/local/bin/syd-pty
     
     # Clean up
     cd /
@@ -90,12 +92,12 @@ cat > /etc/syd/profiles/namada.syd << 'EOF'
 stat:deny
 exec:allow
 ioctl:allow
-force:deny
+force:allow
 network:allow
 lock:allow
 crypt:deny
 proxy:deny
-memory:allow
+memory:deny
 pid:allow
 
 # Allow necessary paths for Namada
@@ -107,14 +109,15 @@ stat/allow: /tmp
 stat/allow: /dev/null
 stat/allow: /dev/urandom
 stat/allow: /dev/random
-stat/allow: /proc/self
-stat/allow: /proc/self/maps
-stat/allow: /proc/self/status
 
 # Network restrictions - allow blockchain networking
 network/allow: unix
 network/allow: inet
 network/allow: inet6
+
+# Allow specific ports for Namada
+network/allow_port: 26656  # P2P port
+network/allow_port: 26657  # RPC port
 
 # Exec restrictions - only allow Namada binary
 exec/allow: /opt/namada/bin/namada
@@ -126,25 +129,22 @@ ioctl/allow: TIOCGWINSZ
 ioctl/allow: TIOCSWINSZ
 ioctl/allow: TCGETS
 ioctl/allow: TCSETS
-ioctl/allow: FIONREAD
 
 # Memory restrictions
 memory/allow: mmap
 memory/allow: mprotect
 memory/allow: munmap
 memory/allow: brk
-memory/allow: madvise
 
 # PID restrictions
 pid/allow: getpid
 pid/allow: getppid
 pid/allow: getpgrp
 pid/allow: setsid
-pid/allow: getuid
-pid/allow: getgid
 
 # Lock restrictions using Landlock
-lock/allow: /opt/namada
+lock/allow: /opt/namada/data
+lock/allow: /opt/namada/logs
 EOF
 
 chmod 644 /etc/syd/profiles/namada.syd

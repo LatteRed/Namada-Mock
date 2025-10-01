@@ -30,14 +30,14 @@ error() {
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
     warn "Running as root. This is acceptable for initial setup on fresh systems."
-    warn "The script will create the namada user and configure build environment properly."
+    warn "The script will create the namadaoperator user and configure build environment properly."
 fi
 
-# Check if namada user exists (create if needed)
-if ! id "namada" &>/dev/null; then
-    warn "Namada user does not exist. Creating it now..."
-    sudo useradd -m -s /bin/bash namada
-    log "Created namada user"
+# Check if namadaoperator user exists (create if needed)
+if ! id "namadaoperator" &>/dev/null; then
+    warn "Namadaoperator user does not exist. Creating it now..."
+    sudo useradd -m -s /bin/bash namadaoperator
+    log "Created namadaoperator user"
 fi
 
 # Helper function for sudo commands
@@ -59,13 +59,13 @@ run_cmd apt install -y build-essential git curl wget pkg-config libssl-dev libss
 # 2. Create secure build directory structure
 log "Step 2: Creating secure build directory structure"
 run_cmd mkdir -p /build/{target,cargo,rustup,tmp,bin}
-run_cmd chown -R namada:namada /build
+run_cmd chown -R namadaoperator:namadaoperator /build
 run_cmd chmod -R 755 /build
 
 # 3. Set up Rust environment variables
 log "Step 3: Configuring Rust environment variables"
 if [[ $EUID -eq 0 ]]; then
-    su - namada -c 'cat >> /home/namada/.bashrc << "EOF"
+    su - namadaoperator -c 'cat >> /home/namadaoperator/.bashrc << "EOF"
 
 # Rust environment for secure builds
 export CARGO_TARGET_DIR=/build/target
@@ -119,7 +119,7 @@ TEMP_DIR=/build/tmp
 CACHE_DIR=/build/cache
 EOF
 
-sudo chown namada:namada /build/build-env.conf
+sudo chown namadaoperator:namadaoperator /build/build-env.conf
 sudo chmod 644 /build/build-env.conf
 
 # 4. Create build cleanup script
@@ -270,7 +270,7 @@ echo "Command: $*"
 echo ""
 
 # Run the command
-sudo -u namada env CARGO_TARGET_DIR=/build/target CARGO_HOME=/build/cargo RUSTUP_HOME=/build/rustup TMPDIR=/build/tmp PATH="/build/cargo/bin:$PATH" "$@"
+sudo -u namadaoperator env CARGO_TARGET_DIR=/build/target CARGO_HOME=/build/cargo RUSTUP_HOME=/build/rustup TMPDIR=/build/tmp PATH="/build/cargo/bin:$PATH" "$@"
 
 # Clean up temporary directory
 cd /

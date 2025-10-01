@@ -38,11 +38,15 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 # Check if Namada is installed
-if ! command -v namada &> /dev/null; then
+if [[ -f "/opt/namada/bin/namada" ]]; then
+    NAMADA_BIN="/opt/namada/bin/namada"
+elif command -v namada &> /dev/null; then
+    NAMADA_BIN="namada"
+else
     error "Namada is not installed. Please install Namada first."
 fi
 
-log "Namada version: $(namada --version)"
+log "Namada version: $($NAMADA_BIN --version)"
 
 # Check if CometBFT is installed
 if ! command -v cometbft &> /dev/null; then
@@ -69,7 +73,7 @@ export CHAIN_ID="$CHAIN_ID"
 log "Joining Housefire testnet (Chain ID: $CHAIN_ID)..."
 log "This will download genesis files and initialize the node..."
 
-sudo -u namadaoperator namada client utils join-network \
+sudo -u namadaoperator $NAMADA_BIN client utils join-network \
     --chain-id "$CHAIN_ID" \
     --add-persistent-peers \
     --base-dir "$BASE_DIR"
@@ -122,7 +126,7 @@ echo "To stop the node, press Ctrl+C"
 echo "To run in background, add '&' at the end"
 echo ""
 
-namada node ledger run --base-dir /opt/namada/data
+/opt/namada/bin/namada node ledger run --base-dir /opt/namada/data
 EOF
 
 sudo chmod +x /usr/local/bin/start-housefire-node.sh
@@ -147,7 +151,7 @@ if pgrep -f "namada node ledger run" > /dev/null; then
     # Get last block
     echo ""
     echo "Last committed block:"
-    namada client block --base-dir /opt/namada/data 2>/dev/null || echo "Unable to get block info"
+    /opt/namada/bin/namada client block --base-dir /opt/namada/data 2>/dev/null || echo "Unable to get block info"
 else
     echo "✗ Node is not running"
 fi

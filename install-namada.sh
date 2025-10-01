@@ -48,47 +48,40 @@ if [[ ! -f "/etc/sysctl.d/99-hardened.conf" ]]; then
     fi
 fi
 
-# Get latest Namada release information
+# Check if Rust is installed
+if ! command -v cargo &> /dev/null; then
+    error "Rust/Cargo is not installed. Please install Rust first."
+fi
+
+log "Rust version: $(rustc --version)"
+log "Cargo version: $(cargo --version)"
+
+# Get the latest Namada release tag for building
 log "Fetching latest Namada release information..."
 NAMADA_RELEASE_URL="https://api.github.com/repos/namada-net/namada/releases/latest"
 
-# Try fetching with detailed error handling and follow redirects
-RELEASE_INFO=$(curl -sL -w "\n%{http_code}" "$NAMADA_RELEASE_URL")
-HTTP_CODE=$(echo "$RELEASE_INFO" | tail -n1)
-RELEASE_INFO=$(echo "$RELEASE_INFO" | sed '$d')
-
-log "GitHub API response code: $HTTP_CODE"
-
-if [[ "$HTTP_CODE" != "200" ]]; then
-    error "Failed to fetch release information from GitHub API (HTTP $HTTP_CODE). Check your internet connection or GitHub API rate limits."
-fi
-
+RELEASE_INFO=$(curl -sL "$NAMADA_RELEASE_URL")
 if [[ -z "$RELEASE_INFO" ]]; then
-    error "Failed to fetch release information from GitHub API - empty response"
+    error "Failed to fetch release information from GitHub API"
 fi
 
-# Extract version and download URL
 NAMADA_VERSION=$(echo "$RELEASE_INFO" | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
-NAMADA_VERSION=${NAMADA_VERSION#v}  # Remove 'v' prefix if present
-
-# Find the appropriate asset for Linux x86_64
-DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o '"browser_download_url": "[^"]*linux-x86_64[^"]*\.tar\.gz"' | cut -d'"' -f4)
-
-if [[ -z "$DOWNLOAD_URL" ]]; then
-    error "Could not find download URL for Namada release"
+if [[ -z "$NAMADA_VERSION" ]]; then
+    error "Failed to extract version information"
 fi
 
 log "Latest Namada version: $NAMADA_VERSION"
-log "Download URL: $DOWNLOAD_URL"
 
 # Confirm installation
-echo -e "${BLUE}This script will install Namada version $NAMADA_VERSION${NC}"
+echo -e "${BLUE}This script will build and install Namada version $NAMADA_VERSION from source${NC}"
 echo -e "${BLUE}Installation will be performed securely with the following features:${NC}"
-echo "  - Binary verification (if signatures available)"
+echo "  - Source code compilation with Rust"
 echo "  - Secure directory permissions"
 echo "  - Systemd service configuration"
 echo "  - Logging configuration"
 echo "  - Resource limits"
+echo ""
+echo -e "${YELLOW}Note: Building from source requires at least 16GB RAM and may take 30-60 minutes${NC}"
 echo ""
 read -p "Do you want to continue? (y/N): " -n 1 -r
 echo
@@ -97,37 +90,40 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-# Create temporary directory for download
-TEMP_DIR=$(mktemp -d -t namada-install.XXXXXXXXXX)
+# Create temporary directory for build
+TEMP_DIR=$(mktemp -d -t namada-build.XXXXXXXXXX)
 cd "$TEMP_DIR"
 
-# Download Namada
-log "Downloading Namada binary..."
-wget -O "namada-${NAMADA_VERSION}.tar.gz" "$DOWNLOAD_URL"
+# Clone Namada repository
+log "Cloning Namada repository..."
+git clone --depth 1 --branch "$NAMADA_VERSION" https://github.com/namada-net/namada.git
+cd namada
 
-# Verify download
-if [[ ! -f "namada-${NAMADA_VERSION}.tar.gz" ]]; then
-    error "Failed to download Namada binary"
+# Check if CometBFT is available
+if ! command -v cometbft &> /dev/null; then
+    log "CometBFT not found. Installing CometBFT v0.37.15..."
+    # Install CometBFT
+    wget -O cometbft_0.37.15_linux_amd64.tar.gz https://github.com/cometbft/cometbft/releases/download/v0.37.15/cometbft_0.37.15_linux_amd64.tar.gz
+    tar -xzf cometbft_0.37.15_linux_amd64.tar.gz
+    sudo cp cometbft /usr/local/bin/
+    sudo chmod +x /usr/local/bin/cometbft
+    rm cometbft_0.37.15_linux_amd64.tar.gz cometbft
+    log "CometBFT installed successfully"
 fi
 
-# Extract archive
-log "Extracting Namada binary..."
-tar -xzf "namada-${NAMADA_VERSION}.tar.gz"
+# Build Namada
+log "Building Namada from source (this may take 30-60 minutes)..."
+make install
 
-# Find the extracted directory
-EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "namada*" | head -1)
-if [[ -z "$EXTRACTED_DIR" ]]; then
-    error "Could not find extracted Namada directory"
-fi
-
-# Verify binary exists
-if [[ ! -f "${EXTRACTED_DIR}/namada" ]]; then
-    error "Namada binary not found in extracted archive"
+# Verify build
+if ! command -v namada &> /dev/null; then
+    error "Namada build failed - binary not found in PATH"
 fi
 
 # Install binary securely
-log "Installing Namada binary..."
-sudo cp "${EXTRACTED_DIR}/namada" /opt/namada/bin/
+log "Installing Namada binary to /opt/namada/bin/..."
+sudo mkdir -p /opt/namada/bin
+sudo cp "$(which namada)" /opt/namada/bin/
 sudo chown namadaoperator:namadaoperator /opt/namada/bin/namada
 sudo chmod 755 /opt/namada/bin/namada
 

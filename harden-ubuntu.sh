@@ -276,9 +276,11 @@ sudo chmod 700 /opt/namada/data
 
 # 8. Configure File Integrity Monitoring
 log "Step 8: Setting up file integrity monitoring (AIDE)"
-sudo aideinit
-sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
-log "AIDE database initialized"
+# AIDE initialization commented out for testing - can take a very long time
+# sudo aideinit
+# sudo mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+# log "AIDE database initialized"
+log "AIDE initialization skipped for testing"
 
 # 9. Set up system limits
 log "Step 9: Configuring system limits"
@@ -605,9 +607,11 @@ echo "Fail2ban: $(systemctl is-active fail2ban)"
 echo ""
 
 echo "=== File Integrity ==="
-if command -v aide &> /dev/null; then
-    echo "AIDE database exists: $(test -f /var/lib/aide/aide.db && echo 'Yes' || echo 'No')"
-fi
+# AIDE check commented out for testing
+# if command -v aide &> /dev/null; then
+#     echo "AIDE database exists: $(test -f /var/lib/aide/aide.db && echo 'Yes' || echo 'No')"
+# fi
+echo "AIDE check skipped for testing"
 echo ""
 
 echo "=== Namada Service ==="

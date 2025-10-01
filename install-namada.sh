@@ -72,7 +72,7 @@ NAMADA_VERSION=$(echo "$RELEASE_INFO" | grep -o '"tag_name": "[^"]*' | cut -d'"'
 NAMADA_VERSION=${NAMADA_VERSION#v}  # Remove 'v' prefix if present
 
 # Find the appropriate asset for Linux x86_64
-DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o '"browser_download_url": "[^"]*\.tar\.gz"' | head -1 | cut -d'"' -f4)
+DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o '"browser_download_url": "[^"]*linux-x86_64[^"]*\.tar\.gz"' | cut -d'"' -f4)
 
 if [[ -z "$DOWNLOAD_URL" ]]; then
     error "Could not find download URL for Namada release"
@@ -98,7 +98,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Create temporary directory for download
-TEMP_DIR=$(mktemp -d)
+TEMP_DIR=$(mktemp -d -t namada-install.XXXXXXXXXX)
 cd "$TEMP_DIR"
 
 # Download Namada

@@ -378,4 +378,17 @@ echo "- Rust toolchain is installed in /build/cargo/"
 echo "- Build artifacts are stored in /build/target/"
 echo "- Regular cleanup runs automatically via cron"
 echo ""
+# Install Rust in the secure environment
+log "Installing Rust in secure environment..."
+if [[ -f "/usr/local/bin/install-rust-secure.sh" ]]; then
+    sudo /usr/local/bin/install-rust-secure.sh
+    if [[ $? -eq 0 ]]; then
+        log "Rust installed successfully in secure environment"
+    else
+        error "Failed to install Rust in secure environment"
+    fi
+else
+    error "Rust installation script not found"
+fi
+
 echo -e "${GREEN}Secure build environment setup complete.${NC}"

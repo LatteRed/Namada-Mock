@@ -83,10 +83,12 @@ backup_file() {
 # 1. System Updates and Basic Security
 log "Step 1: Updating system and installing basic security tools"
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y unattended-upgrades ufw fail2ban aide htop iotop nethogs
+sudo apt install -y unattended-upgrades ufw fail2ban aide htop iotop nethogs git curl build-essential libseccomp-dev pkg-config
 
 # Configure automatic updates
 sudo dpkg-reconfigure -plow unattended-upgrades
+
+# Note: Syd installation moved to separate script: install-syd.sh
 
 # 2. Kernel Hardening
 log "Step 2: Applying kernel hardening"

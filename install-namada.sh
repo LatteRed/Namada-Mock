@@ -99,59 +99,7 @@ log "Cloning Namada repository..."
 git clone --depth 1 https://github.com/namada-net/namada.git
 cd namada
 
-# Install CometBFT (required for Namada)
-if ! command -v cometbft &> /dev/null; then
-    log "CometBFT not found. Installing CometBFT v0.37.15 for Housefire testnet..."
-    
-    # Install bc for version comparison if not available
-    if ! command -v bc &> /dev/null; then
-        apt install -y bc
-    fi
-    
-    # Install or update Go
-    log "Installing/updating Go via apt..."
-    
-    # Update package lists
-    apt update
-    
-    # Install the latest available Go version
-    apt install -y golang
-    
-    # Verify Go installation
-    if ! go version &> /dev/null; then
-        error "Go installation verification failed"
-    fi
-    
-    log "Go version: $(go version)"
-    
-    # Set up Go environment
-    export GOPATH="$HOME/go"
-    export PATH="$PATH:$GOPATH/bin"
-    
-    # Verify Go is available before installing CometBFT
-    if ! go version &> /dev/null; then
-        error "Go is not available in PATH. Please check installation."
-    fi
-    
-    log "Installing CometBFT v0.37.15 with Go version: $(go version)"
-    
-    # Install CometBFT v0.37.15 (required for Housefire testnet)
-    if ! go install github.com/cometbft/cometbft/cmd/cometbft@v0.37.15; then
-        error "Failed to install CometBFT v0.37.15"
-    fi
-    
-    # Add Go bin to PATH permanently
-    echo 'export GOPATH="$HOME/go"' >> ~/.bashrc
-    echo 'export PATH="$PATH:$GOPATH/bin"' >> ~/.bashrc
-    
-    # Copy to /usr/local/bin for system-wide access
-    cp "$HOME/go/bin/cometbft" /usr/local/bin/
-    chmod +x /usr/local/bin/cometbft
-    
-    log "CometBFT v0.37.15 installed successfully"
-else
-    log "CometBFT is already installed"
-fi
+# CometBFT installation removed - assume it's pre-installed
 
 # Build Namada using secure build environment
 log "Building Namada from source (this may take 30-60 minutes)..."

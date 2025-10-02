@@ -54,6 +54,12 @@ if [[ -f "/usr/local/bin/source-build-env.sh" ]]; then
     source /usr/local/bin/source-build-env.sh
 fi
 
+# Also source the Rust environment from the secure build directory
+if [[ -f "/build/cargo/env" ]]; then
+    log "Loading Rust environment from secure build directory..."
+    source /build/cargo/env
+fi
+
 # Check if Rust is installed
 if ! command -v cargo &> /dev/null; then
     error "Rust/Cargo is not installed. Please run the build environment setup first."
@@ -97,18 +103,42 @@ cd namada
 if ! command -v cometbft &> /dev/null; then
     log "CometBFT not found. Installing CometBFT v0.37.15 for Housefire testnet..."
     
-    # Install Go if not available
-    if ! command -v go &> /dev/null; then
-        log "Installing Go..."
-        apt install -y golang-go
+    # Install bc for version comparison if not available
+    if ! command -v bc &> /dev/null; then
+        apt install -y bc
     fi
+    
+    # Install or update Go
+    log "Installing/updating Go via apt..."
+    
+    # Update package lists
+    apt update
+    
+    # Install the latest available Go version
+    apt install -y golang
+    
+    # Verify Go installation
+    if ! go version &> /dev/null; then
+        error "Go installation verification failed"
+    fi
+    
+    log "Go version: $(go version)"
     
     # Set up Go environment
     export GOPATH="$HOME/go"
     export PATH="$PATH:$GOPATH/bin"
     
+    # Verify Go is available before installing CometBFT
+    if ! go version &> /dev/null; then
+        error "Go is not available in PATH. Please check installation."
+    fi
+    
+    log "Installing CometBFT v0.37.15 with Go version: $(go version)"
+    
     # Install CometBFT v0.37.15 (required for Housefire testnet)
-    go install github.com/cometbft/cometbft/cmd/cometbft@v0.37.15
+    if ! go install github.com/cometbft/cometbft/cmd/cometbft@v0.37.15; then
+        error "Failed to install CometBFT v0.37.15"
+    fi
     
     # Add Go bin to PATH permanently
     echo 'export GOPATH="$HOME/go"' >> ~/.bashrc
